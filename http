@@ -1,0 +1,81 @@
+analyzer HTTP withcontext {
+   connection : HTTP_analyzer;
+   flow     : HTTP_flow;
+};
+
+connection HTTP_analyzer {
+   upflow = HTTP_flow (true);
+   downflow = HTTP_flow (false);
+};
+
+type HTTP_TOKEN = RE/[^()zZ@,;:\\"\/\[\]?={} \t]+/;
+type HTTP_WS = RE/[ \t]*/;
+
+type HTTP_Version = record {
+  : "HTTP/";
+  vers_str: RE/[0-9]+\.[0-9]+/;
+};
+
+
+type HTTP_RequestLine = record {
+  method: HTTP_TOKEN;
+  : HTTP_WS;
+  uri: RE/[[:alnum:][:punct:]]+/;
+  : HTTP_WS;
+  version: HTTP_Version;
+} &oneline;
+#, &let {
+#  bro_gen_req: bool = bro_event_http_request(
+#    $context.connection.bro_conn, method, uri, version.vers_str);
+#};
+
+type HTTP_Header = record {
+  name: HTTP_TOKEN;
+  : ":";
+  : HTTP_WS;
+  value: bytestring &restofdata;
+} &oneline;
+# &let {
+#  bro_gen_hdr: bool = bro_event_http_header(
+#    $context.connection.bro_conn, $context.flow.is_orig, name, value);
+#};
+
+type HTTP_Headers = HTTP_Header[] &until($input.length() == 0);
+
+type HTTP_Message = record {
+  headers: HTTP_Headers;
+  # body: HTTP_Body(HTTP_HeaderInfo(headers));
+};
+
+
+type HTTP_ReplyLine = record {
+  version: HTTP_Version;
+  : HTTP_WS;
+  status: RE/[0-9]\{3\}/;
+  : HTTP_WS;
+  reason: bytestring &restofdata;
+} &oneline;
+#, &let {
+#  bro_gen_resp: bool = bro_event_http_reply(
+#    $context.connection.bro_conn, version.vers_str, to_int(status), reason);
+#};
+
+type HTTP_Request = record {
+  request: HTTP_RequestLine;
+  msg: HTTP_Message;
+};
+type HTTP_Reply = record {
+  reply: HTTP_ReplyLine;
+  msg: HTTP_Message;
+};
+
+
+type HTTP_PDU(is_orig: bool) = case is_orig of {
+  true -> request: HTTP_Request;
+  false -> reply: HTTP_Reply;
+};
+
+
+flow HTTP_flow(is_orig: bool) {
+  flowunit = HTTP_PDU(is_orig) withcontext(connection, this);
+};
