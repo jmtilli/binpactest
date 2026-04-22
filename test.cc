@@ -39,9 +39,9 @@ int main(int argc, char **argv)
   printf("%g us\n", us);
   printf("%g Gbps\n", (sizeof(http)-1)*8/us/1e3);
   req = HTTP_Request();
+  buf = FlowBuffer();
   for (i = 0; i < sizeof(http)-2; i++)
   {
-    buf = FlowBuffer();
     buf.NewData(http+i, http+i+1);
     req.ParseBuffer(&buf);
   }
