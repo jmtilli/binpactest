@@ -1,3 +1,4 @@
+#include <sys/time.h>
 #include "http_pac.h"
 
 using namespace binpac;
@@ -23,11 +24,19 @@ int main(int argc, char **argv)
   HTTP_Request req;
   FlowBuffer buf;
   int i;
-  for (i = 0; i < 100*1000; i++)
+  struct timeval tv1, tv2;
+  double us;
+  gettimeofday(&tv1, NULL);
+  for (i = 0; i < 1000*1000; i++)
   {
     req = HTTP_Request();
     buf = FlowBuffer();
     buf.NewData(http, http+sizeof(http));
     req.ParseBuffer(&buf);
   }
+  gettimeofday(&tv2, NULL);
+  us = (tv2.tv_sec-tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec)/1e6;
+  printf("%g us\n", us);
+  printf("%g Gbps\n", (sizeof(http)-1)*8/us/1e3);
+  return 0;
 }
