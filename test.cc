@@ -38,5 +38,12 @@ int main(int argc, char **argv)
   us = (tv2.tv_sec-tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec)/1e6;
   printf("%g us\n", us);
   printf("%g Gbps\n", (sizeof(http)-1)*8/us/1e3);
+  req = HTTP_Request();
+  for (i = 0; i < sizeof(http)-2; i++)
+  {
+    buf = FlowBuffer();
+    buf.NewData(http+i, http+i+1);
+    req.ParseBuffer(&buf);
+  }
   return 0;
 }
