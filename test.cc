@@ -29,7 +29,8 @@ int main(int argc, char **argv)
   gettimeofday(&tv1, NULL);
   for (i = 0; i < 1000*1000; i++)
   {
-    req = HTTP_Request();
+    HTTP_Request req;
+    //req = HTTP_Request();
     buf = FlowBuffer();
     buf.NewData(http, http+sizeof(http));
     req.ParseBuffer(&buf);
